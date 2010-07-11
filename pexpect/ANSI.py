@@ -1,8 +1,10 @@
-"""This implements an ANSI terminal emulator as a subclass of screen.
+"""This implements an ANSI (VT100) terminal emulator as a subclass of screen.
 
 $Id$
 """
+
 # references:
+#     http://en.wikipedia.org/wiki/ANSI_escape_code
 #     http://www.retards.org/terminals/vt102.html
 #     http://vt100.net/docs/vt102-ug/contents.html
 #     http://vt100.net/docs/vt220-rm/
@@ -13,12 +15,15 @@ import FSM
 import copy
 import string
 
-def Emit (fsm):
+#
+# The 'Do.*' functions are helper functions for the ANSI class.
+#
+def DoEmit (fsm):
 
     screen = fsm.memory[0]
     screen.write_ch(fsm.input_symbol)
 
-def StartNumber (fsm):
+def DoStartNumber (fsm):
 
     fsm.memory.append (fsm.input_symbol)
 
@@ -150,7 +155,7 @@ def DoMode (fsm):
     mode = fsm.memory.pop() # Should be 4
     # screen.setReplaceMode ()
 
-def Log (fsm):
+def DoLog (fsm):
 
     screen = fsm.memory[0]
     fsm.memory = [screen]
@@ -159,16 +164,21 @@ def Log (fsm):
     fout.close()
 
 class term (screen.screen):
-    """This is a placeholder. 
-    In theory I might want to add other terminal types.
-    """
+
+    """This class is an abstract, generic terminal.
+    This does nothing. This is a placeholder that
+    provides a common base class for other terminals
+    such as an ANSI terminal. """
+
     def __init__ (self, r=24, c=80):
+
         screen.screen.__init__(self, r,c)
 
 class ANSI (term):
 
-    """This class encapsulates a generic terminal. It filters a stream and
-    maintains the state of a screen object. """
+    """This class implements an ANSI (VT100) terminal.
+    It is a stream filter that recognizes ANSI terminal
+    escape sequences and maintains the state of a screen object. """
 
     def __init__ (self, r=24,c=80):
 
@@ -176,10 +186,10 @@ class ANSI (term):
 
         #self.screen = screen (24,80)
         self.state = FSM.FSM ('INIT',[self])
-        self.state.set_default_transition (Log, 'INIT')
-        self.state.add_transition_any ('INIT', Emit, 'INIT')
+        self.state.set_default_transition (DoLog, 'INIT')
+        self.state.add_transition_any ('INIT', DoEmit, 'INIT')
         self.state.add_transition ('\x1b', 'INIT', None, 'ESC')
-        self.state.add_transition_any ('ESC', Log, 'INIT')
+        self.state.add_transition_any ('ESC', DoLog, 'INIT')
         self.state.add_transition ('(', 'ESC', None, 'G0SCS')
         self.state.add_transition (')', 'ESC', None, 'G1SCS')
         self.state.add_transition_list ('AB012', 'G0SCS', None, 'INIT')
@@ -204,7 +214,7 @@ class ANSI (term):
         self.state.add_transition ('r', 'ELB', DoEnableScroll, 'INIT')
         self.state.add_transition ('m', 'ELB', None, 'INIT')
         self.state.add_transition ('?', 'ELB', None, 'MODECRAP')
-        self.state.add_transition_list (string.digits, 'ELB', StartNumber, 'NUMBER_1')
+        self.state.add_transition_list (string.digits, 'ELB', DoStartNumber, 'NUMBER_1')
         self.state.add_transition_list (string.digits, 'NUMBER_1', BuildNumber, 'NUMBER_1')
         self.state.add_transition ('D', 'NUMBER_1', DoBack, 'INIT')
         self.state.add_transition ('B', 'NUMBER_1', DoDown, 'INIT')
@@ -217,31 +227,32 @@ class ANSI (term):
         ### number;number;number before it. I've never seen more than two,
         ### but the specs say it's allowed. crap!
         self.state.add_transition ('m', 'NUMBER_1', None, 'INIT')
-        ### LED control. Same problem as 'm' code.
-        self.state.add_transition ('q', 'NUMBER_1', None, 'INIT') 
-        
-        # \E[?47h appears to be "switch to alternate screen"
-        # \E[?47l restores alternate screen... I think.
-        self.state.add_transition_list (string.digits, 'MODECRAP', StartNumber, 'MODECRAP_NUM')
+        ### LED control. Same implementation problem as 'm' code.
+        self.state.add_transition ('q', 'NUMBER_1', None, 'INIT')
+
+        # \E[?47h switch to alternate screen
+        # \E[?47l restores to normal screen from alternate screen.
+        self.state.add_transition_list (string.digits, 'MODECRAP', DoStartNumber, 'MODECRAP_NUM')
         self.state.add_transition_list (string.digits, 'MODECRAP_NUM', BuildNumber, 'MODECRAP_NUM')
         self.state.add_transition ('l', 'MODECRAP_NUM', None, 'INIT')
         self.state.add_transition ('h', 'MODECRAP_NUM', None, 'INIT')
 
 #RM   Reset Mode                Esc [ Ps l                   none
         self.state.add_transition (';', 'NUMBER_1', None, 'SEMICOLON')
-        self.state.add_transition_any ('SEMICOLON', Log, 'INIT')
-        self.state.add_transition_list (string.digits, 'SEMICOLON', StartNumber, 'NUMBER_2')
+        self.state.add_transition_any ('SEMICOLON', DoLog, 'INIT')
+        self.state.add_transition_list (string.digits, 'SEMICOLON', DoStartNumber, 'NUMBER_2')
         self.state.add_transition_list (string.digits, 'NUMBER_2', BuildNumber, 'NUMBER_2')
-        self.state.add_transition_any ('NUMBER_2', Log, 'INIT')
+        self.state.add_transition_any ('NUMBER_2', DoLog, 'INIT')
         self.state.add_transition ('H', 'NUMBER_2', DoHome, 'INIT')
         self.state.add_transition ('f', 'NUMBER_2', DoHome, 'INIT')
         self.state.add_transition ('r', 'NUMBER_2', DoScrollRegion, 'INIT')
         ### It gets worse... the 'm' code can have infinite number of
-        ### number;number;number before it. I've never seen more than two,
-        ### but the specs say it's allowed. crap!
+        ### "number;number;number" arguments before it. See also
+        ### the line of code that handles 'm' when in state 'NUMBER_1':
+        ###     self.state.add_transition ('m', 'NUMBER_1',
         self.state.add_transition ('m', 'NUMBER_2', None, 'INIT')
-        ### LED control. Same problem as 'm' code.
-        self.state.add_transition ('q', 'NUMBER_2', None, 'INIT') 
+        ### LED control. Same implementation problem as 'm' code.
+        self.state.add_transition ('q', 'NUMBER_2', None, 'INIT')
 
     def process (self, c):
 
@@ -270,6 +281,7 @@ class ANSI (term):
         ch = ch[0]
 
         if ch == '\r':
+            self.cr()
         #    self.crlf()
             return
         if ch == '\n':
