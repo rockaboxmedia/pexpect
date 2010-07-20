@@ -27,7 +27,7 @@ def DoStartNumber (fsm):
 
     fsm.memory.append (fsm.input_symbol)
 
-def BuildNumber (fsm):
+def DoBuildNumber (fsm):
 
     ns = fsm.memory.pop()
     ns = ns + fsm.input_symbol
@@ -119,11 +119,12 @@ def DoEraseEndOfLine (fsm):
 
 def DoEraseLine (fsm):
 
+    arg = int(fsm.memory.pop())
     screen = fsm.memory[0]
     if arg == 0:
-        screen.end_of_line()
+        screen.erase_end_of_line()
     elif arg == 1:
-        screen.start_of_line()
+        screen.erase_start_of_line()
     elif arg == 2:
         screen.erase_line()
 
@@ -215,7 +216,7 @@ class ANSI (term):
         self.state.add_transition ('m', 'ELB', None, 'INIT')
         self.state.add_transition ('?', 'ELB', None, 'MODECRAP')
         self.state.add_transition_list (string.digits, 'ELB', DoStartNumber, 'NUMBER_1')
-        self.state.add_transition_list (string.digits, 'NUMBER_1', BuildNumber, 'NUMBER_1')
+        self.state.add_transition_list (string.digits, 'NUMBER_1', DoBuildNumber, 'NUMBER_1')
         self.state.add_transition ('D', 'NUMBER_1', DoBack, 'INIT')
         self.state.add_transition ('B', 'NUMBER_1', DoDown, 'INIT')
         self.state.add_transition ('C', 'NUMBER_1', DoForward, 'INIT')
@@ -233,7 +234,7 @@ class ANSI (term):
         # \E[?47h switch to alternate screen
         # \E[?47l restores to normal screen from alternate screen.
         self.state.add_transition_list (string.digits, 'MODECRAP', DoStartNumber, 'MODECRAP_NUM')
-        self.state.add_transition_list (string.digits, 'MODECRAP_NUM', BuildNumber, 'MODECRAP_NUM')
+        self.state.add_transition_list (string.digits, 'MODECRAP_NUM', DoBuildNumber, 'MODECRAP_NUM')
         self.state.add_transition ('l', 'MODECRAP_NUM', None, 'INIT')
         self.state.add_transition ('h', 'MODECRAP_NUM', None, 'INIT')
 
@@ -241,18 +242,26 @@ class ANSI (term):
         self.state.add_transition (';', 'NUMBER_1', None, 'SEMICOLON')
         self.state.add_transition_any ('SEMICOLON', DoLog, 'INIT')
         self.state.add_transition_list (string.digits, 'SEMICOLON', DoStartNumber, 'NUMBER_2')
-        self.state.add_transition_list (string.digits, 'NUMBER_2', BuildNumber, 'NUMBER_2')
+        self.state.add_transition_list (string.digits, 'NUMBER_2', DoBuildNumber, 'NUMBER_2')
         self.state.add_transition_any ('NUMBER_2', DoLog, 'INIT')
         self.state.add_transition ('H', 'NUMBER_2', DoHome, 'INIT')
         self.state.add_transition ('f', 'NUMBER_2', DoHome, 'INIT')
         self.state.add_transition ('r', 'NUMBER_2', DoScrollRegion, 'INIT')
         ### It gets worse... the 'm' code can have infinite number of
-        ### "number;number;number" arguments before it. See also
-        ### the line of code that handles 'm' when in state 'NUMBER_1':
-        ###     self.state.add_transition ('m', 'NUMBER_1',
+        ### number;number;number before it. I've never seen more than two,
+        ### but the specs say it's allowed. crap!
         self.state.add_transition ('m', 'NUMBER_2', None, 'INIT')
-        ### LED control. Same implementation problem as 'm' code.
+        ### LED control. Same problem as 'm' code.
         self.state.add_transition ('q', 'NUMBER_2', None, 'INIT')
+        self.state.add_transition (';', 'NUMBER_2', None, 'SEMICOLON_X')
+
+        # Create a state for 'q' and 'm' which allows an infinite number of ignored numbers
+        self.state.add_transition_any ('SEMICOLON_X', DoLog, 'INIT')
+        self.state.add_transition_list (string.digits, 'SEMICOLON_X', None, 'NUMBER_X')
+        self.state.add_transition_any ('NUMBER_X', DoLog, 'INIT')
+        self.state.add_transition ('m', 'NUMBER_X', None, 'INIT')
+        self.state.add_transition ('q', 'NUMBER_X', None, 'INIT')
+        self.state.add_transition (';', 'NUMBER_2', None, 'SEMICOLON_X')
 
     def process (self, c):
 
@@ -282,7 +291,6 @@ class ANSI (term):
 
         if ch == '\r':
             self.cr()
-        #    self.crlf()
             return
         if ch == '\n':
             self.crlf()
