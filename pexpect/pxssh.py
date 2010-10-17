@@ -7,6 +7,7 @@ $Id$
 from pexpect import *
 import pexpect
 import time
+import os
 
 __all__ = ['ExceptionPxssh', 'pxssh']
 
@@ -131,6 +132,8 @@ class pxssh (spawn):
         # All of these timing pace values are magic.
         # I came up with these based on what seemed reliable for
         # connecting to a heavily loaded machine I have.
+        self.sendline()
+        time.sleep(0.1)
         # If latency is worse than these values then this will fail.
 
         try:
@@ -159,7 +162,7 @@ class pxssh (spawn):
 
     ### TODO: This is getting messy and I'm pretty sure this isn't perfect.
     ### TODO: I need to draw a flow chart for this.
-    def login (self,server,username,password='',terminal_type='ansi',original_prompt=r"[#$]",login_timeout=10,port=None,auto_prompt_reset=True):
+    def login (self,server,username,password='',terminal_type='ansi',original_prompt=r"[#$]",login_timeout=10,port=None,auto_prompt_reset=True,ssh_key=None):
 
         """This logs the user into the given server. It uses the
         'original_prompt' to try to find the prompt right after login. When it
@@ -189,6 +192,12 @@ class pxssh (spawn):
             ssh_options = ssh_options + ' ' + self.SSH_OPTS
         if port is not None:
             ssh_options = ssh_options + ' -p %s'%(str(port))
+        if ssh_key is not None:
+            try:
+                os.path.isfile(ssh_key)
+            except:
+                raise ExceptionPxssh ('private ssh key does not exist')
+            ssh_options = ssh_options + ' -i %s' % (ssh_key)
         cmd = "ssh %s -l %s %s" % (ssh_options, username, server)
 
         # This does not distinguish between a remote server 'password' prompt
