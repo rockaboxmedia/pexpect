@@ -71,7 +71,7 @@ torture_target='+---------------------------------------------------------------
 '|Normal gjpqy Underline   Blink   Underline+Blink gjpqy                          |\n' +\
 '|Bold   gjpqy Underline   Blink   Underline+Blink gjpqy                          |\n' +\
 '|Inverse      Underline   Blink   Underline+Blink                                |\n' +\
-'|Bold+Inverse Underline7m   Blink   Underline+Blink                              |\n' +\
+'|Bold+Inverse Underline   Blink   Underline+Blink                                |\n' +\
 '|This is double width                                                            |\n' +\
 '|This is double height                                                           |\n' +\
 '|This is double height                                                           |\n' +\
