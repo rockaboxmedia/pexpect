@@ -282,11 +282,11 @@ class ANSI (term):
 
     def write_ch (self, ch):
 
-        """This puts a character at the current cursor position. cursor
-        position if moved forward with wrap-around, but no scrolling is done if
+        """This puts a character at the current cursor position. The cursor
+        position is moved forward with wrap-around, but no scrolling is done if
         the cursor hits the lower-right corner of the screen. """
 
-        #\r and \n both produce a call to crlf().
+        #\r and \n both produce a call to cr() and lf(), respectively.
         ch = ch[0]
 
         if ch == '\r':
@@ -297,9 +297,7 @@ class ANSI (term):
             return
         if ch == chr(screen.BS):
             self.cursor_back()
-            self.put_abs(self.cur_r, self.cur_c, ' ')
             return
-
         if ch not in string.printable:
             fout = open ('log', 'a')
             fout.write ('Nonprint: ' + str(ord(ch)) + '\n')
