@@ -102,6 +102,7 @@ class ExceptionPexpect(Exception):
     def __init__(self, value):
 
         self.value = value
+        super(ExceptionPexpect, self).__init__(value)
 
     def __str__(self):
 
