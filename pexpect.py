@@ -1,29 +1,29 @@
 """Pexpect is a Python module for spawning child applications and controlling
 them automatically. Pexpect can be used for automating interactive applications
-such as ssh, ftp, passwd, telnet, etc. It can be used to a automate setup
-scripts for duplicating software package installations on different servers. It
-can be used for automated software testing. Pexpect is in the spirit of Don
-Libes' Expect, but Pexpect is pure Python. Other Expect-like modules for Python
-require TCL and Expect or require C extensions to be compiled. Pexpect does not
-use C, Expect, or TCL extensions. It should work on any platform that supports
-the standard Python pty module. The Pexpect interface focuses on ease of use so
-that simple tasks are easy.
+such as ssh, ftp, passwd, telnet, etc. It can be used for many purposes such as:
+automating setup scripts, duplicating software package installations on
+different servers, or automated software testing. Pexpect is in the spirit of
+Don Libes' Expect, but Pexpect is pure Python. Other Expect-like modules for
+Python require TCL and Expect, or require C extensions to be compiled. Pexpect
+does not use C, Expect, or TCL extensions. It should work on any platform that
+supports the standard Python pty module. The Pexpect interface focuses on ease
+of use, so that simple tasks are made easy.
 
-There are two main interfaces to the Pexpect system; these are the function,
-run() and the class, spawn. The spawn class is more powerful. The run()
-function is simpler than spawn, and is good for quickly calling program. When
+There are two main interfaces to the Pexpect system. These are the function
+"run()", and the class "spawn". The spawn class is more powerful. The run()
+function is simpler than spawn, and is good for quickly calling programs. When
 you call the run() function it executes a given program and then returns the
 output. This is a handy replacement for os.system().
 
-For example::
+For example:
 
     pexpect.run('ls -la')
 
 The spawn class is the more powerful interface to the Pexpect system. You can
-use this to spawn a child program then interact with it by sending input and
-expecting responses (waiting for patterns in the child's output).
+use this to spawn a child program and then interact with it by sending input
+and expecting responses (ie waiting for patterns in the child's output).
 
-For example::
+For example:
 
     child = pexpect.spawn('scp foo myname@host.example.com:.')
     child.expect ('Password:')
@@ -31,7 +31,7 @@ For example::
 
 This works even for commands that ask for passwords or other input outside of
 the normal stdio streams. For example, ssh reads input directly from the TTY
-device which bypasses stdin.
+device, which bypasses stdin.
 
 Credits: Noah Spurrier, Richard Holden, Marco Molteni, Kimberley Burchett,
 Robert Stone, Hartmut Goebel, Chad Schroeder, Erick Tryzelaar, Dave Kirby, Ids
@@ -272,25 +272,25 @@ class spawn (object):
     def __init__(self, command, args=[], timeout=30, maxread=2000, searchwindowsize=None, logfile=None, cwd=None, env=None):
 
         """This is the constructor. The command parameter may be a string that
-        includes a command and any arguments to the command. For example::
+        includes a command and any arguments to the command. For example:
 
             child = pexpect.spawn ('/usr/bin/ftp')
             child = pexpect.spawn ('/usr/bin/ssh user@example.com')
             child = pexpect.spawn ('ls -latr /tmp')
 
-        You may also construct it with a list of arguments like so::
+        You may also construct it with a list of arguments like so:
 
             child = pexpect.spawn ('/usr/bin/ftp', [])
             child = pexpect.spawn ('/usr/bin/ssh', ['user@example.com'])
             child = pexpect.spawn ('ls', ['-latr', '/tmp'])
 
         After this the child application will be created and will be ready to
-        talk to. For normal use, see expect() and send() and sendline().
+        talk to. For normal use, see expect(), send(), and sendline().
 
         Remember that Pexpect does NOT interpret shell meta characters such as
         redirect, pipe, or wild cards (>, |, or *). This is a common mistake.
         If you want to run a command and pipe it through another command then
-        you must also start a shell. For example::
+        you must also start a shell. For example:
 
             child = pexpect.spawn('/bin/bash -c "ls -l | grep LOG > log_list.txt"')
             child.expect(pexpect.EOF)
@@ -298,41 +298,41 @@ class spawn (object):
         The second form of spawn (where you pass a list of arguments) is useful
         in situations where you wish to spawn a command and pass it its own
         argument list. This can make syntax more clear. For example, the
-        following is equivalent to the previous example::
+        following is equivalent to the previous example:
 
             shell_cmd = 'ls -l | grep LOG > log_list.txt'
             child = pexpect.spawn('/bin/bash', ['-c', shell_cmd])
             child.expect(pexpect.EOF)
 
-        The maxread attribute sets the read buffer size. This is maximum number
-        of bytes that Pexpect will try to read from a TTY at one time. Setting
-        the maxread size to 1 will turn off buffering. Setting the maxread
-        value higher may help performance in cases where large amounts of
-        output are read back from the child. This feature is useful in
+        The maxread attribute sets the read buffer size. This is the maximum
+        number of bytes that Pexpect will try to read from a TTY at one time.
+        Setting the maxread size to 1 will turn off buffering. Setting the
+        maxread value higher may help performance in cases where large amounts
+        of output are read back from the child. This feature is useful in
         conjunction with searchwindowsize.
 
-        The searchwindowsize attribute sets the how far back in the incomming
-        seach buffer Pexpect will search for pattern matches. Every time
+        The searchwindowsize attribute sets the how far back Pexpect will search
+        for pattern matches in the incoming search buffer. Every time
         Pexpect reads some data from the child it will append the data to the
-        incomming buffer. The default is to search from the beginning of the
-        imcomming buffer each time new data is read from the child. But this is
+        incoming buffer. The default is to search from the beginning of the
+        imcoming buffer each time new data is read from the child. This is
         very inefficient if you are running a command that generates a large
-        amount of data where you want to match The searchwindowsize does not
-        effect the size of the incomming data buffer. You will still have
+        amount of data you want to match within. The searchwindowsize does not
+        affect the size of the incoming data buffer. You will still have
         access to the full buffer after expect() returns.
 
-        The logfile member turns on or off logging. All input and output will
+        The logfile member turns logging on or off. All input and output will
         be copied to the given file object. Set logfile to None to stop
         logging. This is the default. Set logfile to sys.stdout to echo
         everything to standard output. The logfile is flushed after each write.
 
-        Example log input and output to a file::
+        Example logging input and output to a file:
 
             child = pexpect.spawn('some_command')
             fout = file('mylog.txt','w')
             child.logfile = fout
 
-        Example log to stdout::
+        Example logging to stdout:
 
             child = pexpect.spawn('some_command')
             child.logfile = sys.stdout
@@ -340,31 +340,31 @@ class spawn (object):
         The logfile_read and logfile_send members can be used to separately log
         the input from the child and output sent to the child. Sometimes you
         don't want to see everything you write to the child. You only want to
-        log what the child sends back. For example::
+        log what the child sends back. For example:
 
             child = pexpect.spawn('some_command')
             child.logfile_read = sys.stdout
 
-        To separately log output sent to the child use logfile_send::
+        To log output sent to the child separately use logfile_send:
 
             self.logfile_send = fout
 
-        The delaybeforesend helps overcome a weird behavior that many users
-        were experiencing. The typical problem was that a user would expect() a
-        "Password:" prompt and then immediately call sendline() to send the
-        password. The user would then see that their password was echoed back
-        to them. Passwords don't normally echo. The problem is caused by the
-        fact that most applications print out the "Password" prompt and then
-        turn off stdin echo, but if you send your password before the
-        application turned off echo, then you get your password echoed.
-        Normally this wouldn't be a problem when interacting with a human at a
-        real keyboard. If you introduce a slight delay just before writing then
-        this seems to clear up the problem. This was such a common problem for
-        many users that I decided that the default pexpect behavior should be
-        to sleep just before writing to the child application. 1/20th of a
-        second (50 ms) seems to be enough to clear up the problem. You can set
-        delaybeforesend to 0 to return to the old behavior. Most Linux machines
-        don't like this to be below 0.03. I don't know why.
+        The delaybeforesend setting helps overcome weird behavior that many
+        users were experiencing. The typical problem was that a user would
+        expect() a "Password:" prompt and then immediately call sendline() to
+        send the password. The user would then see that their password was
+        echoed back to them. Passwords don't normally echo. The problem is
+        caused by the fact that most applications print out the "Password"
+        prompt and then turn off stdin echo, but if you send your password
+        before the application turned off echo, then you get your password
+        echoed. Normally this wouldn't be a problem when interacting with a
+        human at a real keyboard. If you introduce a slight delay just before
+        writing then this seems to clear up the problem. This was such a common
+        problem for many users that I decided that the default pexpect behavior
+        should be to sleep just before writing to the child application. 1/20th
+        of a second (50 ms) seems to be enough to clear up the problem. You can
+        set delaybeforesend to 0 to return to the old behavior. Most Linux 
+        machines don't like this to be below 0.03. I don't know why.
 
         Note that spawn is clever about finding commands on your path.
         It uses the same logic that "which" uses to find executables.
